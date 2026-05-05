@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "ES7+React/Redux/React-Native snippets",
+    "TypeScript Vue Plugin (Volar)",
+    "Prettier - Code formatter",
+    "ESLint",
+    "Thunder Client",
+    "REST Client"
+  ]
+}

@@ -1,0 +1,148 @@
+.metric-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.metric-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Color Variants */
+.metric-card--primary {
+  border-left: 4px solid #0066cc;
+}
+
+.metric-card--primary:hover {
+  box-shadow: 0 8px 24px rgba(0, 102, 204, 0.2);
+}
+
+.metric-card--secondary {
+  border-left: 4px solid #ff9500;
+}
+
+.metric-card--secondary:hover {
+  box-shadow: 0 8px 24px rgba(255, 149, 0, 0.2);
+}
+
+.metric-card--success {
+  border-left: 4px solid #00cc66;
+}
+
+.metric-card--success:hover {
+  box-shadow: 0 8px 24px rgba(0, 204, 102, 0.2);
+}
+
+.metric-card--danger {
+  border-left: 4px solid #ff4444;
+}
+
+.metric-card--danger:hover {
+  box-shadow: 0 8px 24px rgba(255, 68, 68, 0.2);
+}
+
+/* Header */
+.metric-card__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card__icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.metric-card__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin: 0;
+  text-align: left;
+}
+
+/* Content */
+.metric-card__content {
+  flex: 1;
+  margin-bottom: 1rem;
+}
+
+.metric-card__value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0.5rem 0;
+  line-height: 1;
+}
+
+.metric-card__change {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #00cc66;
+  margin-top: 0.5rem;
+}
+
+.metric-card__change.negative {
+  color: #ff4444;
+}
+
+/* Footer */
+.metric-card__footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1rem;
+}
+
+.metric-card__period {
+  font-size: 0.85rem;
+  color: #888;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .metric-card {
+    padding: 1.25rem;
+  }
+
+  .metric-card__value {
+    font-size: 1.8rem;
+  }
+
+  .metric-card__title {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .metric-card {
+    padding: 1rem;
+  }
+
+  .metric-card__header {
+    gap: 0.75rem;
+  }
+
+  .metric-card__icon {
+    font-size: 1.5rem;
+  }
+
+  .metric-card__value {
+    font-size: 1.5rem;
+  }
+
+  .metric-card__title {
+    font-size: 0.85rem;
+  }
+}

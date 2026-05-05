@@ -1,0 +1,405 @@
+import React, { useState, useEffect, useCallback } from 'react'
+import '../styles/SearchAndWatchlist.css'
+
+interface Stock {
+  ticker: string
+  category: 'core' | 'satellite'
+  addedDate: string
+}
+
+interface FundamentalData {
+  price: number
+  companyName: string
+  industry: string
+  sector: string
+  marketCap: number
+  pe: number
+  pb: number
+  debtToEquity: number
+  loading: boolean
+  error: string | null
+}
+
+interface StockData {
+  [ticker: string]: FundamentalData
+}
+
+const SearchAndWatchlist: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [watchlist, setWatchlist] = useState<Stock[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<'core' | 'satellite'>('satellite')
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [stockData, setStockData] = useState<StockData>({})
+  const [loadingStocks, setLoadingStocks] = useState<Set<string>>(new Set())
+
+  const API_KEY = import.meta.env.VITE_FMP_API_KEY
+
+  // Load watchlist from localStorage on component mount
+  useEffect(() => {
+    const savedWatchlist = localStorage.getItem('stockWatchlist')
+    if (savedWatchlist) {
+      try {
+        const parsedWatchlist = JSON.parse(savedWatchlist)
+        setWatchlist(parsedWatchlist)
+        // Fetch data for all saved stocks
+        parsedWatchlist.forEach((stock: Stock) => {
+          fetchStockData(stock.ticker)
+        })
+      } catch (error) {
+        console.error('Error loading watchlist from localStorage:', error)
+        // Clear corrupted data
+        localStorage.removeItem('stockWatchlist')
+      }
+    }
+    setIsInitialized(true)
+  }, [fetchStockData])
+
+  // Save watchlist to localStorage whenever it changes (after initialization)
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem('stockWatchlist', JSON.stringify(watchlist))
+    }
+  }, [watchlist, isInitialized])
+
+  const fetchStockData = useCallback(async (ticker: string) => {
+    if (!API_KEY) {
+      console.error('FMP API key not found')
+      setStockData(prev => ({
+        ...prev,
+        [ticker]: {
+          price: 0,
+          companyName: 'API Key Missing',
+          industry: 'N/A',
+          sector: 'N/A',
+          marketCap: 0,
+          pe: 0,
+          pb: 0,
+          debtToEquity: 0,
+          loading: false,
+          error: 'API key not configured'
+        }
+      }))
+      return
+    }
+
+    setLoadingStocks(prev => new Set(prev).add(ticker))
+
+    try {
+      const response = await fetch(`https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=${API_KEY}`)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (data.length === 0) {
+        throw new Error('Stock not found')
+      }
+
+      const stockInfo = data[0]
+
+      setStockData(prev => ({
+        ...prev,
+        [ticker]: {
+          price: stockInfo.price || 0,
+          companyName: stockInfo.companyName || 'Unknown',
+          industry: stockInfo.industry || 'N/A',
+          sector: stockInfo.sector || 'N/A',
+          marketCap: stockInfo.mktCap || 0,
+          pe: stockInfo.pe || 0,
+          pb: stockInfo.pb || 0,
+          debtToEquity: stockInfo.debtToEquity || 0,
+          loading: false,
+          error: null
+        }
+      }))
+    } catch (error) {
+      console.error(`Error fetching data for ${ticker}:`, error)
+      setStockData(prev => ({
+        ...prev,
+        [ticker]: {
+          price: 0,
+          companyName: 'Error',
+          industry: 'N/A',
+          sector: 'N/A',
+          marketCap: 0,
+          pe: 0,
+          pb: 0,
+          debtToEquity: 0,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Failed to fetch data'
+        }
+      }))
+    } finally {
+      setLoadingStocks(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(ticker)
+        return newSet
+      })
+    }
+  }, [API_KEY])
+
+  const validateTicker = (ticker: string): { isValid: boolean; error?: string } => {
+    const trimmedTicker = ticker.trim()
+
+    // Check for empty string
+    if (!trimmedTicker) {
+      return { isValid: false, error: 'Please enter a stock ticker' }
+    }
+
+    // Check for valid ticker format (basic validation)
+    if (!/^[A-Z]{1,5}$/.test(trimmedTicker.toUpperCase())) {
+      return { isValid: false, error: 'Please enter a valid stock ticker (1-5 letters)' }
+    }
+
+    // Check for duplicates
+    const upperTicker = trimmedTicker.toUpperCase()
+    if (watchlist.some(stock => stock.ticker.toUpperCase() === upperTicker)) {
+      return { isValid: false, error: `${upperTicker} is already in your watchlist` }
+    }
+
+    return { isValid: true }
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const validation = validateTicker(searchTerm)
+    if (!validation.isValid) {
+      alert(validation.error)
+      return
+    }
+
+    const ticker = searchTerm.trim().toUpperCase()
+    addToWatchlist(ticker)
+    setSearchTerm('')
+  }
+
+  const addToWatchlist = (ticker: string) => {
+    const newStock: Stock = {
+      ticker,
+      category: selectedCategory,
+      addedDate: new Date().toISOString()
+    }
+
+    setWatchlist(prev => [...prev, newStock])
+
+    // Fetch data for the new stock
+    fetchStockData(ticker)
+  }
+
+  const removeFromWatchlist = (ticker: string) => {
+    setWatchlist(prev => prev.filter(stock => stock.ticker !== ticker))
+  }
+
+  const updateStockCategory = (ticker: string, category: 'core' | 'satellite') => {
+    setWatchlist(prev =>
+      prev.map(stock =>
+        stock.ticker === ticker ? { ...stock, category } : stock
+      )
+    )
+  }
+
+  const coreAssets = watchlist.filter(stock => stock.category === 'core')
+  const satelliteAssets = watchlist.filter(stock => stock.category === 'satellite')
+
+  return (
+    <div className="search-watchlist">
+      <div className="search-section">
+        <h2>Stock Search & Watchlist</h2>
+
+        <form onSubmit={handleSearch} className="search-form">
+          <div className="search-input-group">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Enter stock ticker (e.g., AAPL, TSLA, SPY)"
+              className="search-input"
+              maxLength={10}
+            />
+            <button type="submit" className="search-button">
+              🔍 Search
+            </button>
+          </div>
+
+          <div className="category-selector">
+            <label>Add to category:</label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value as 'core' | 'satellite')}
+              className="category-select"
+            >
+              <option value="satellite">Satellite Assets</option>
+              <option value="core">Core Assets</option>
+            </select>
+          </div>
+        </form>
+      </div>
+
+      <div className="watchlist-section">
+        <h3>Your Watchlist ({watchlist.length} stocks)</h3>
+
+        {watchlist.length === 0 ? (
+          <div className="empty-watchlist">
+            <p>No stocks in your watchlist yet.</p>
+            <p>Search for a ticker above to get started!</p>
+          </div>
+        ) : (
+          <div className="watchlist-categories">
+            {/* Core Assets Section */}
+            <div className="category-section">
+              <h4>🏛️ Core Assets</h4>
+              <p className="category-description">
+                Long-term holdings like index ETFs and stable investments
+              </p>
+              {coreAssets.length === 0 ? (
+                <p className="empty-category">No core assets yet</p>
+              ) : (
+                <div className="stocks-grid">
+                  {coreAssets.map(stock => (
+                    <StockCard
+                      key={stock.ticker}
+                      stock={stock}
+                      fundamentalData={stockData[stock.ticker]}
+                      isLoading={loadingStocks.has(stock.ticker)}
+                      onRemove={removeFromWatchlist}
+                      onCategoryChange={updateStockCategory}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Satellite Assets Section */}
+            <div className="category-section">
+              <h4>🚀 Satellite Assets</h4>
+              <p className="category-description">
+                Higher-risk, higher-reward individual stocks and sector plays
+              </p>
+              {satelliteAssets.length === 0 ? (
+                <p className="empty-category">No satellite assets yet</p>
+              ) : (
+                <div className="stocks-grid">
+                  {satelliteAssets.map(stock => (
+                    <StockCard
+                      key={stock.ticker}
+                      stock={stock}
+                      fundamentalData={stockData[stock.ticker]}
+                      isLoading={loadingStocks.has(stock.ticker)}
+                      onRemove={removeFromWatchlist}
+                      onCategoryChange={updateStockCategory}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Stock Card Component
+interface StockCardProps {
+  stock: Stock
+  fundamentalData?: FundamentalData
+  isLoading: boolean
+  onRemove: (ticker: string) => void
+  onCategoryChange: (ticker: string, category: 'core' | 'satellite') => void
+}
+
+const StockCard: React.FC<StockCardProps> = ({
+  stock,
+  fundamentalData,
+  isLoading,
+  onRemove,
+  onCategoryChange
+}) => {
+  const formatCurrency = (value: number) => {
+    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`
+    return `$${value.toFixed(2)}`
+  }
+
+  const formatNumber = (value: number, decimals: number = 2) => {
+    return value.toFixed(decimals)
+  }
+
+  return (
+    <div className="stock-card">
+      <div className="stock-card-header">
+        <h5 className="stock-ticker">{stock.ticker}</h5>
+        <div className="stock-actions">
+          <select
+            value={stock.category}
+            onChange={(e) => onCategoryChange(stock.ticker, e.target.value as 'core' | 'satellite')}
+            className="category-select-mini"
+          >
+            <option value="satellite">Satellite</option>
+            <option value="core">Core</option>
+          </select>
+          <button
+            onClick={() => onRemove(stock.ticker)}
+            className="remove-button"
+            title="Remove from watchlist"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div className="stock-fundamentals">
+        {isLoading ? (
+          <div className="loading-state">
+            <p>Fetching fundamental data...</p>
+          </div>
+        ) : fundamentalData?.error ? (
+          <div className="error-state">
+            <p>Error: {fundamentalData.error}</p>
+          </div>
+        ) : fundamentalData ? (
+          <>
+            <div className="fundamental-metric">
+              <span className="metric-label">Current Price</span>
+              <span className="metric-value">${formatNumber(fundamentalData.price)}</span>
+            </div>
+            <div className="fundamental-metric">
+              <span className="metric-label">Company</span>
+              <span className="metric-value company-name">{fundamentalData.companyName}</span>
+            </div>
+            <div className="fundamental-metric">
+              <span className="metric-label">Industry</span>
+              <span className="metric-value">{fundamentalData.industry}</span>
+            </div>
+            <div className="fundamental-metric">
+              <span className="metric-label">Market Cap</span>
+              <span className="metric-value">{formatCurrency(fundamentalData.marketCap)}</span>
+            </div>
+            <div className="fundamental-metric">
+              <span className="metric-label">P/E Ratio</span>
+              <span className="metric-value">{fundamentalData.pe > 0 ? formatNumber(fundamentalData.pe) : 'N/A'}</span>
+            </div>
+            <div className="fundamental-metric">
+              <span className="metric-label">Debt/Equity</span>
+              <span className="metric-value">{formatNumber(fundamentalData.debtToEquity)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="loading-state">
+            <p>Loading data...</p>
+          </div>
+        )}
+      </div>
+
+      <div className="stock-added-date">
+        Added: {new Date(stock.addedDate).toLocaleDateString()}
+      </div>
+    </div>
+  )
+}
+
+export default SearchAndWatchlist

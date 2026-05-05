@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/macrodashboard.tsx","./src/components/metriccard.tsx","./src/components/navigation.tsx","./src/components/searchandwatchlist.tsx","./src/components/technicalanalysismodal.tsx","./src/utils/apikey.ts"],"version":"5.9.3"}
