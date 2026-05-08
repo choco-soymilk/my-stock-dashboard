@@ -628,32 +628,34 @@ const SearchAndWatchlist: React.FC = () => {
             </button>
           </div>
 
-          <div className="category-selector">
-            <label htmlFor="category-select">Add to category:</label>
-            <select
-              id="category-select"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value as 'core' | 'satellite' | '')}
-              className="category-select"
-            >
-              <option value="" disabled>
-                Select category...
-              </option>
-              <option value="core">Core</option>
-              <option value="satellite">Satellite</option>
-            </select>
-          </div>
-          <div className="asset-type-selector">
-            <label htmlFor="asset-type-select">Asset type:</label>
-            <select
-              id="asset-type-select"
-              value={selectedIsEtf ? 'etf' : 'stock'}
-              onChange={(e) => setSelectedIsEtf(e.target.value === 'etf')}
-              className="category-select"
-            >
-              <option value="stock">Stock</option>
-              <option value="etf">ETF</option>
-            </select>
+          <div className="search-selectors-container">
+            <div className="selector-group">
+              <label htmlFor="category-select">Add to category:</label>
+              <select
+                id="category-select"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value as 'core' | 'satellite' | '')}
+                className="category-select"
+              >
+                <option value="" disabled>
+                  Select category...
+                </option>
+                <option value="core">Core</option>
+                <option value="satellite">Satellite</option>
+              </select>
+            </div>
+            <div className="selector-group">
+              <label htmlFor="asset-type-select">Asset type:</label>
+              <select
+                id="asset-type-select"
+                value={selectedIsEtf ? 'etf' : 'stock'}
+                onChange={(e) => setSelectedIsEtf(e.target.value === 'etf')}
+                className="category-select"
+              >
+                <option value="stock">Stock</option>
+                <option value="etf">ETF</option>
+              </select>
+            </div>
           </div>
         </form>
       </div>
@@ -857,43 +859,7 @@ const StockCard: React.FC<StockCardProps> = ({
     return value !== null && value !== undefined && !isNaN(value) && value !== 0
   }
 
-  // Helper to get performance color and display
-  const getPerformanceColor = (value: number | null): string => {
-    if (value === null || value === undefined) return ''
-    if (value > 0) return '#10b981' // green
-    if (value < 0) return '#ef4444' // red
-    return '#6b7280' // gray
-  }
 
-  // Helper to format performance value
-  const formatPercentage = (value: number | null): string => {
-    if (value === null || value === undefined) return 'N/A'
-    return `${value > 0 ? '+' : ''}${formatNumber(value, 2)}%`
-  }
-
-  // Helper to render performance pill/badge
-  const renderPerformanceBadge = (value: number | null, label: string) => {
-    if (value === null || value === undefined) return null
-    const color = getPerformanceColor(value)
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          backgroundColor: `${color}20`,
-          border: `1px solid ${color}40`,
-          fontSize: '12px',
-          fontWeight: '500'
-        }}
-      >
-        <span>{label}:</span>
-        <span style={{ color, fontWeight: '600' }}>{formatPercentage(value)}</span>
-      </div>
-    )
-  }
 
   const getCategoryDisplayLabel = (): string => {
     switch (stock.category) {
@@ -971,24 +937,9 @@ const StockCard: React.FC<StockCardProps> = ({
                 <span className="fundamental-value">{fundamentalData.marketCap > 0 ? formatCurrency(fundamentalData.marketCap) : 'N/A'}</span>
               </div>
 
-              {/* Row 2: Performance badges */}
-              <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {isLoading ? (
-                  <div className="no-performance-data"><p>Loading chart...</p></div>
-                ) : fundamentalData.performance ? (
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {renderPerformanceBadge(fundamentalData.performance.ytd, 'YTD')}
-                    {renderPerformanceBadge(fundamentalData.performance.oneYear, '1Y')}
-                    {renderPerformanceBadge(fundamentalData.performance.threeYear, '3Y')}
-                  </div>
-                ) : (
-                  <div className="no-performance-data"><p>No chart data</p></div>
-                )}
-              </div>
-
               {/* Row 3: Mini performance bar chart */}
               {fundamentalData.performance && (
-                <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <EtfPerformanceChart performance={fundamentalData.performance} />
                 </div>
               )}

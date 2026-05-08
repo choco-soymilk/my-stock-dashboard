@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts'
 import { getCurrentAPIKey, rotateToNextAPIKey } from '../utils/apiKey'
 import '../styles/TechnicalAnalysisModal.css'
 
@@ -305,11 +305,15 @@ const TechnicalAnalysisModal: React.FC<TechnicalAnalysisModalProps> = ({ ticker,
                     tick={{ fontSize: 12 }}
                     interval={Math.floor(chartData.length / 10)}
                   />
-                  <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
+                  <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} ticks={[0, 30, 50, 70, 100]} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#f9f9f9', border: '1px solid #ddd', borderRadius: '4px' }}
                     formatter={(value: any) => value ? value.toFixed(2) : 'N/A'}
                   />
+                  {/* Overbought/Oversold Area Shading */}
+                  <ReferenceArea y1={70} y2={100} fill="#ff7300" fillOpacity={0.08} />
+                  <ReferenceArea y1={0} y2={30} fill="#00b050" fillOpacity={0.08} />
+                  
                   <Area
                     type="monotone"
                     dataKey="rsi"
@@ -318,9 +322,19 @@ const TechnicalAnalysisModal: React.FC<TechnicalAnalysisModalProps> = ({ ticker,
                     fillOpacity={0.3}
                     name="RSI 14"
                   />
-                  {/* Overbought and Oversold lines */}
-                  <line x1="0" y1="70" x2="100%" y2="70" stroke="#ff7300" strokeDasharray="5 5" />
-                  <line x1="0" y1="30" x2="100%" y2="30" stroke="#00b050" strokeDasharray="5 5" />
+                  {/* Strictly fixed reference lines */}
+                  <ReferenceLine 
+                    y={70} 
+                    stroke="#ff7300" 
+                    strokeDasharray="5 5" 
+                    label={{ value: '70', position: 'insideRight', fill: '#ff7300', fontSize: 10, fontWeight: 600 }} 
+                  />
+                  <ReferenceLine 
+                    y={30} 
+                    stroke="#00b050" 
+                    strokeDasharray="5 5" 
+                    label={{ value: '30', position: 'insideRight', fill: '#00b050', fontSize: 10, fontWeight: 600 }} 
+                  />
                 </AreaChart>
               </ResponsiveContainer>
               <div className="rsi-legend">
